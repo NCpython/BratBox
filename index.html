@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#667eea">
+    <title>BratBox - Product Backlog</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="logo">
+                    <i class="fas fa-box"></i>
+                    BratBox
+                </h1>
+                <nav class="nav">
+                    <a href="#" class="nav-link active" data-section="backlog">Backlog</a>
+                    <a href="#" class="nav-link" data-section="sprint-planning">Sprint Planning</a>
+                    <a href="#" class="nav-link" data-section="sprint-board">Sprint Board</a>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Backlog Section -->
+            <div class="section-container" id="backlog-section">
+                <div class="backlog-container">
+                    <!-- Backlog Header -->
+                    <div class="backlog-header">
+                        <h2>Product Backlog</h2>
+                        <div class="backlog-actions">
+                            <button class="btn btn-primary" id="addEpicBtn">
+                                <i class="fas fa-plus"></i>
+                                Add Epic
+                            </button>
+                            <button class="btn btn-secondary" id="addStoryBtn">
+                                <i class="fas fa-plus"></i>
+                                Add User Story
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Backlog Content -->
+                    <div class="backlog-content">
+                        <div class="backlog-columns">
+                            <!-- Epics Column -->
+                            <div class="backlog-column epics-column">
+                                <h3 class="column-title">
+                                    <i class="fas fa-layer-group"></i>
+                                    Epics
+                                </h3>
+                                <div class="sticky-notes-container" id="epicsContainer">
+                                    <!-- Epic sticky notes will be added here -->
+                                </div>
+                            </div>
+
+                            <!-- User Stories Column -->
+                            <div class="backlog-column stories-column">
+                                <h3 class="column-title">
+                                    <i class="fas fa-tasks"></i>
+                                    User Stories
+                                </h3>
+                                <div class="sticky-notes-container" id="storiesContainer">
+                                    <!-- User story sticky notes will be added here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sprint Planning Section -->
+            <div class="section-container" id="sprint-planning-section" style="display: none;">
+                <div class="sprint-planning-container">
+                    <!-- Sprint Planning Header -->
+                    <div class="sprint-header">
+                        <h2>Sprint Planning</h2>
+                        <div class="sprint-actions">
+                            <button class="btn btn-primary" id="createSprintBtn">
+                                <i class="fas fa-plus"></i>
+                                Create New Sprint
+                            </button>
+                            <button class="btn btn-secondary" id="addFromBacklogBtn">
+                                <i class="fas fa-arrow-down"></i>
+                                Add from Backlog
+                            </button>
+                            <button class="btn btn-danger" id="clearSprintBtn">
+                                <i class="fas fa-trash"></i>
+                                Clear Sprint
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Sprint Board -->
+                    <div class="sprint-board">
+                        <div class="sprint-columns">
+                            <!-- To Do Column -->
+                            <div class="sprint-column" data-status="todo">
+                                <div class="column-header">
+                                    <h3 class="column-title">
+                                        <i class="fas fa-clipboard-list"></i>
+                                        To Do
+                                    </h3>
+                                    <span class="column-count" id="todo-count">0</span>
+                                </div>
+                                <div class="column-content" id="todo-column">
+                                    <!-- Stories in To Do will be added here -->
+                                </div>
+                            </div>
+
+                            <!-- In Progress Column -->
+                            <div class="sprint-column" data-status="in-progress">
+                                <div class="column-header">
+                                    <h3 class="column-title">
+                                        <i class="fas fa-play-circle"></i>
+                                        In Progress
+                                    </h3>
+                                    <span class="column-count" id="in-progress-count">0</span>
+                                </div>
+                                <div class="column-content" id="in-progress-column">
+                                    <!-- Stories in progress will be added here -->
+                                </div>
+                            </div>
+
+                            <!-- Testing Column -->
+                            <div class="sprint-column" data-status="testing">
+                                <div class="column-header">
+                                    <h3 class="column-title">
+                                        <i class="fas fa-bug"></i>
+                                        Testing
+                                    </h3>
+                                    <span class="column-count" id="testing-count">0</span>
+                                </div>
+                                <div class="column-content" id="testing-column">
+                                    <!-- Stories in testing will be added here -->
+                                </div>
+                            </div>
+
+                            <!-- Testing Completed Column -->
+                            <div class="sprint-column" data-status="testing-completed">
+                                <div class="column-header">
+                                    <h3 class="column-title">
+                                        <i class="fas fa-check-circle"></i>
+                                        Testing Completed
+                                    </h3>
+                                    <span class="column-count" id="testing-completed-count">0</span>
+                                </div>
+                                <div class="column-content" id="testing-completed-column">
+                                    <!-- Stories with testing completed will be added here -->
+                                </div>
+                            </div>
+
+                            <!-- Review Column -->
+                            <div class="sprint-column" data-status="review">
+                                <div class="column-header">
+                                    <h3 class="column-title">
+                                        <i class="fas fa-eye"></i>
+                                        Review
+                                    </h3>
+                                    <span class="column-count" id="review-count">0</span>
+                                </div>
+                                <div class="column-content" id="review-column">
+                                    <!-- Stories in review will be added here -->
+                                </div>
+                            </div>
+
+                            <!-- Live Column -->
+                            <div class="sprint-column" data-status="live">
+                                <div class="column-header">
+                                    <h3 class="column-title">
+                                        <i class="fas fa-rocket"></i>
+                                        Live
+                                    </h3>
+                                    <span class="column-count" id="live-count">0</span>
+                                </div>
+                                <div class="column-content" id="live-column">
+                                    <!-- Live stories will be added here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sprint Board Section (placeholder) -->
+            <div class="section-container" id="sprint-board-section" style="display: none;">
+                <div class="sprint-board-container">
+                    <h2>Sprint Board</h2>
+                    <p>Coming soon...</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Item Modal -->
+    <div class="modal" id="addItemModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Add Epic</h3>
+                <button class="close-btn" id="closeModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form class="modal-form" id="addItemForm">
+                <div class="form-group">
+                    <label for="itemTitle">Title</label>
+                    <input type="text" id="itemTitle" name="title" required>
+                </div>
+                <div class="form-group">
+                    <label for="itemDescription">Description</label>
+                    <textarea id="itemDescription" name="description" rows="4"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="itemPriority">Priority</label>
+                    <select id="itemPriority" name="priority">
+                        <option value="low">Low</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="high">High</option>
+                        <option value="critical">Critical</option>
+                    </select>
+                </div>
+                <div class="form-group" id="epicAssignmentGroup" style="display: none;">
+                    <label for="itemEpicId">Assign to Epic</label>
+                    <select id="itemEpicId" name="epicId">
+                        <option value="">No Epic (Standalone Story)</option>
+                    </select>
+                </div>
+                <div class="form-group" id="userAssignmentGroup" style="display: none;">
+                    <label for="itemUserId">Assign to User</label>
+                    <select id="itemUserId" name="userId">
+                        <option value="">Unassigned</option>
+                    </select>
+                </div>
+                <div class="form-group" id="storyPointsGroup" style="display: none;">
+                    <label for="itemStoryPoints">Story Points</label>
+                    <select id="itemStoryPoints" name="storyPoints">
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="5">5</option>
+                        <option value="8">8</option>
+                        <option value="13">13</option>
+                        <option value="21">21</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancelBtn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Item</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Story Details Modal -->
+    <div class="modal" id="storyDetailsModal">
+        <div class="modal-content story-details-modal">
+            <div class="modal-header">
+                <h3 id="storyDetailsTitle">Story Details</h3>
+                <button class="close-btn" id="closeStoryDetailsModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="story-details-content" id="storyDetailsContent">
+                <!-- Story details will be populated here -->
+            </div>
+            
+            <!-- Comments Section -->
+            <div class="comments-section">
+                <div class="comments-header">
+                    <h4>Comments</h4>
+                    <span class="comments-count" id="commentsCount">0 comments</span>
+                </div>
+                <div class="add-comment-form">
+                    <div class="comment-input-group">
+                        <select id="commentAuthor" class="comment-author-select">
+                            <!-- Users will be populated here -->
+                        </select>
+                        <textarea id="commentText" placeholder="Add a comment..." rows="3"></textarea>
+                    </div>
+                    <button class="btn btn-primary btn-sm" id="addCommentBtn">
+                        <i class="fas fa-plus"></i>
+                        Add Comment
+                    </button>
+                </div>
+                <div class="comments-list" id="commentsList">
+                    <!-- Comments will be populated here -->
+                </div>
+            </div>
+            
+            <div class="story-details-actions">
+                <button class="btn btn-secondary" id="editStoryBtn">
+                    <i class="fas fa-edit"></i>
+                    Edit Story
+                </button>
+                <button class="btn btn-primary" id="closeDetailsBtn">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Backlog Selection Modal -->
+    <div class="modal" id="backlogSelectionModal">
+        <div class="modal-content backlog-selection-modal">
+            <div class="modal-header">
+                <h3>Add Stories from Backlog</h3>
+                <button class="close-btn" id="closeBacklogSelectionModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <!-- Search and Filter Section -->
+            <div class="backlog-selection-header">
+                <div class="search-section">
+                    <div class="search-input-group">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" id="backlogSearchInput" placeholder="Search by story title or epic name..." />
+                        <button class="btn btn-secondary btn-sm" id="clearSearchBtn">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="selection-controls">
+                    <button class="btn btn-secondary btn-sm" id="selectAllBtn">
+                        <i class="fas fa-check-square"></i>
+                        Select All
+                    </button>
+                    <button class="btn btn-secondary btn-sm" id="selectNoneBtn">
+                        <i class="fas fa-square"></i>
+                        Select None
+                    </button>
+                    <span class="selection-count" id="selectionCount">0 selected</span>
+                </div>
+            </div>
+
+            <!-- Stories List -->
+            <div class="backlog-stories-list" id="backlogStoriesList">
+                <!-- Available stories will be populated here -->
+            </div>
+
+            <!-- Modal Actions -->
+            <div class="backlog-selection-actions">
+                <button class="btn btn-secondary" id="cancelBacklogSelectionBtn">
+                    Cancel
+                </button>
+                <button class="btn btn-primary" id="addSelectedStoriesBtn" disabled>
+                    <i class="fas fa-plus"></i>
+                    Add Selected Stories
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
