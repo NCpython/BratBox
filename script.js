@@ -85,7 +85,7 @@ class BratBoxApp {
         document.getElementById('backlogSearchInput').addEventListener('input', (e) => this.filterStories(e.target.value));
         
         // Form submission
-        document.getElementById('addItemForm').addEventListener('submit', (e) => this.handleFormSubmit(e));
+        document.getElementById('addItemForm').addEventListener('submit', async (e) => await this.handleFormSubmit(e));
         
         // Close modal on backdrop click
         document.getElementById('addItemModal').addEventListener('click', (e) => {
@@ -117,6 +117,9 @@ class BratBoxApp {
 
         // Initialize drag and drop for sprint columns
         this.initializeDragAndDrop();
+        
+        // Initialize file upload functionality
+        this.initializeFileUpload();
     }
 
     openModal(type, isEditMode = false) {
@@ -149,6 +152,8 @@ class BratBoxApp {
             document.getElementById('addItemForm').reset();
             // Set default priority
             document.getElementById('itemPriority').value = 'medium';
+            // Clear selected files
+            this.clearSelectedFiles();
         }
         
         // Update submit button text
@@ -214,7 +219,7 @@ class BratBoxApp {
         });
     }
 
-    handleFormSubmit(e) {
+    async handleFormSubmit(e) {
         e.preventDefault();
         
         const formData = new FormData(e.target);
@@ -233,6 +238,11 @@ class BratBoxApp {
                 this.currentEditingItem.storyPoints = parseInt(formData.get('storyPoints'));
                 this.currentEditingItem.epicId = formData.get('epicId') || null;
                 this.currentEditingItem.assignedUserId = formData.get('userId') || null;
+            }
+
+            // Handle file attachments
+            if (this.selectedFiles.length > 0) {
+                this.currentEditingItem.attachments = await this.filesToBase64(this.selectedFiles);
             }
 
             this.saveToSharedStorage();
@@ -262,7 +272,8 @@ class BratBoxApp {
                 goals: this.currentItemType === 'epic' ? formData.get('goals') || '' : null,
                 storyPoints: this.currentItemType === 'story' ? parseInt(formData.get('storyPoints')) : null,
                 epicId: this.currentItemType === 'story' ? formData.get('epicId') || null : null,
-                assignedUserId: this.currentItemType === 'story' ? formData.get('userId') || null : null
+                assignedUserId: this.currentItemType === 'story' ? formData.get('userId') || null : null,
+                attachments: this.selectedFiles.length > 0 ? await this.filesToBase64(this.selectedFiles) : []
             };
 
             if (this.currentItemType === 'epic') {
@@ -430,6 +441,14 @@ class BratBoxApp {
         
         if (type === 'story' && item.assignedUserId) {
             document.getElementById('itemUserId').value = item.assignedUserId;
+        }
+
+        // Load existing attachments
+        if (item.attachments && item.attachments.length > 0) {
+            this.selectedFiles = this.base64ToFiles(item.attachments);
+            this.updateFilePreview();
+        } else {
+            this.clearSelectedFiles();
         }
 
         // Open modal in edit mode
@@ -896,6 +915,17 @@ class BratBoxApp {
                 <label class="story-detail-label">Created</label>
                 <div class="story-detail-value">${new Date(story.createdAt).toLocaleDateString()} at ${new Date(story.createdAt).toLocaleTimeString()}</div>
             </div>
+
+            ${story.attachments && story.attachments.length > 0 ? `
+                <div class="story-detail-section">
+                    <label class="story-detail-label">Attachments</label>
+                    <div class="attachments-section">
+                        <div class="attachments-grid">
+                            ${story.attachments.map(attachment => this.createAttachmentItem(attachment)).join('')}
+                        </div>
+                    </div>
+                </div>
+            ` : ''}
         `;
 
         // Populate comments
@@ -967,6 +997,17 @@ class BratBoxApp {
                 <label class="story-detail-label">Created</label>
                 <div class="story-detail-value">${new Date(epic.createdAt).toLocaleDateString()} at ${new Date(epic.createdAt).toLocaleTimeString()}</div>
             </div>
+
+            ${epic.attachments && epic.attachments.length > 0 ? `
+                <div class="story-detail-section">
+                    <label class="story-detail-label">Attachments</label>
+                    <div class="attachments-section">
+                        <div class="attachments-grid">
+                            ${epic.attachments.map(attachment => this.createAttachmentItem(attachment)).join('')}
+                        </div>
+                    </div>
+                </div>
+            ` : ''}
         `;
 
         // Populate comments
@@ -1372,6 +1413,271 @@ class BratBoxApp {
         
         this.closeBacklogSelectionModal();
         this.showNotification(`${storiesToAdd.length} stories added to sprint successfully!`);
+    }
+
+    // File Upload Methods
+    initializeFileUpload() {
+        const fileInput = document.getElementById('itemFiles');
+        const fileUploadArea = document.getElementById('fileUploadArea');
+        const filePreviewContainer = document.getElementById('filePreviewContainer');
+        const filePreviewList = document.getElementById('filePreviewList');
+        const clearFilesBtn = document.getElementById('clearFilesBtn');
+
+        // Store selected files
+        this.selectedFiles = [];
+
+        // File input change handler
+        fileInput.addEventListener('change', (e) => {
+            this.handleFileSelection(e.target.files);
+        });
+
+        // Drag and drop handlers
+        fileUploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileUploadArea.classList.add('dragover');
+        });
+
+        fileUploadArea.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            fileUploadArea.classList.remove('dragover');
+        });
+
+        fileUploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileUploadArea.classList.remove('dragover');
+            this.handleFileSelection(e.dataTransfer.files);
+        });
+
+        // Clear files button
+        clearFilesBtn.addEventListener('click', () => {
+            this.clearSelectedFiles();
+        });
+
+        // Click to upload
+        fileUploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+    }
+
+    handleFileSelection(files) {
+        const newFiles = Array.from(files);
+        
+        // Validate file types and sizes
+        const validFiles = newFiles.filter(file => {
+            const maxSize = 10 * 1024 * 1024; // 10MB
+            const allowedTypes = [
+                'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+                'application/pdf',
+                'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'text/plain',
+                'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                'application/zip', 'application/x-rar-compressed'
+            ];
+
+            if (file.size > maxSize) {
+                this.showNotification(`File "${file.name}" is too large. Maximum size is 10MB.`, 'error');
+                return false;
+            }
+
+            if (!allowedTypes.includes(file.type)) {
+                this.showNotification(`File type "${file.type}" is not supported.`, 'error');
+                return false;
+            }
+
+            return true;
+        });
+
+        // Add valid files to selection
+        this.selectedFiles = [...this.selectedFiles, ...validFiles];
+        this.updateFilePreview();
+    }
+
+    clearSelectedFiles() {
+        this.selectedFiles = [];
+        document.getElementById('itemFiles').value = '';
+        this.updateFilePreview();
+    }
+
+    updateFilePreview() {
+        const filePreviewContainer = document.getElementById('filePreviewContainer');
+        const filePreviewList = document.getElementById('filePreviewList');
+
+        if (this.selectedFiles.length === 0) {
+            filePreviewContainer.style.display = 'none';
+            return;
+        }
+
+        filePreviewContainer.style.display = 'block';
+        filePreviewList.innerHTML = '';
+
+        this.selectedFiles.forEach((file, index) => {
+            const fileItem = this.createFilePreviewItem(file, index);
+            filePreviewList.appendChild(fileItem);
+        });
+    }
+
+    createFilePreviewItem(file, index) {
+        const fileItem = document.createElement('div');
+        fileItem.className = 'file-preview-item';
+        fileItem.dataset.index = index;
+
+        const fileType = this.getFileType(file.type);
+        const fileSize = this.formatFileSize(file.size);
+
+        fileItem.innerHTML = `
+            <div class="file-preview-info">
+                <div class="file-preview-icon ${fileType.class}">
+                    <i class="${fileType.icon}"></i>
+                </div>
+                <div class="file-preview-details">
+                    <div class="file-preview-name">${this.escapeHtml(file.name)}</div>
+                    <div class="file-preview-size">${fileSize}</div>
+                </div>
+            </div>
+            <div class="file-preview-actions">
+                <button type="button" class="file-preview-view" onclick="app.previewFile(${index})">
+                    <i class="fas fa-eye"></i>
+                </button>
+                <button type="button" class="file-preview-remove" onclick="app.removeFile(${index})">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+
+        return fileItem;
+    }
+
+    getFileType(mimeType) {
+        const typeMap = {
+            'image/': { class: 'image', icon: 'fas fa-image' },
+            'application/pdf': { class: 'pdf', icon: 'fas fa-file-pdf' },
+            'application/msword': { class: 'document', icon: 'fas fa-file-word' },
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document': { class: 'document', icon: 'fas fa-file-word' },
+            'text/plain': { class: 'document', icon: 'fas fa-file-alt' },
+            'application/vnd.ms-excel': { class: 'spreadsheet', icon: 'fas fa-file-excel' },
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': { class: 'spreadsheet', icon: 'fas fa-file-excel' },
+            'application/vnd.ms-powerpoint': { class: 'presentation', icon: 'fas fa-file-powerpoint' },
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation': { class: 'presentation', icon: 'fas fa-file-powerpoint' },
+            'application/zip': { class: 'archive', icon: 'fas fa-file-archive' },
+            'application/x-rar-compressed': { class: 'archive', icon: 'fas fa-file-archive' }
+        };
+
+        for (const [type, info] of Object.entries(typeMap)) {
+            if (mimeType.startsWith(type)) {
+                return info;
+            }
+        }
+
+        return { class: 'other', icon: 'fas fa-file' };
+    }
+
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    removeFile(index) {
+        this.selectedFiles.splice(index, 1);
+        this.updateFilePreview();
+    }
+
+    previewFile(index) {
+        const file = this.selectedFiles[index];
+        if (!file) return;
+
+        if (file.type.startsWith('image/')) {
+            this.previewImage(file);
+        } else {
+            // For non-image files, create a download link
+            const url = URL.createObjectURL(file);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = file.name;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    }
+
+    previewImage(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const modal = document.createElement('div');
+            modal.className = 'modal show';
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width: 90vw; max-height: 90vh;">
+                    <div class="modal-header">
+                        <h3>${this.escapeHtml(file.name)}</h3>
+                        <button class="close-btn" onclick="this.closest('.modal').remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div style="text-align: center; padding: 1rem;">
+                        <img src="${e.target.result}" class="image-preview" alt="${this.escapeHtml(file.name)}">
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // Convert files to base64 for storage
+    async filesToBase64(files) {
+        const promises = Array.from(files).map(file => {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve({
+                    name: file.name,
+                    type: file.type,
+                    size: file.size,
+                    data: reader.result
+                });
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        });
+        return Promise.all(promises);
+    }
+
+    // Load files from base64
+    base64ToFiles(fileDataArray) {
+        return fileDataArray.map(fileData => {
+            const byteCharacters = atob(fileData.data.split(',')[1]);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            return new File([byteArray], fileData.name, { type: fileData.type });
+        });
+    }
+
+    // Create attachment item for display
+    createAttachmentItem(attachment) {
+        const fileType = this.getFileType(attachment.type);
+        const fileSize = this.formatFileSize(attachment.size);
+        
+        return `
+            <div class="attachment-item" onclick="app.downloadAttachment('${attachment.data}')">
+                <div class="attachment-icon ${fileType.class}">
+                    <i class="${fileType.icon}"></i>
+                </div>
+                <div class="attachment-name">${this.escapeHtml(attachment.name)}</div>
+                <div class="attachment-size">${fileSize}</div>
+            </div>
+        `;
+    }
+
+    // Download attachment
+    downloadAttachment(base64Data) {
+        const link = document.createElement('a');
+        link.href = base64Data;
+        link.download = '';
+        link.click();
     }
 }
 

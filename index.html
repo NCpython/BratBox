@@ -228,6 +228,24 @@
                     <label for="itemGoals">Goals</label>
                     <textarea id="itemGoals" name="goals" rows="3" placeholder="Define the goals and objectives for this epic..."></textarea>
                 </div>
+                <div class="form-group" id="fileUploadGroup">
+                    <label for="itemFiles">Attachments</label>
+                    <div class="file-upload-container">
+                        <input type="file" id="itemFiles" name="files" multiple accept="image/*,.pdf,.doc,.docx,.txt,.xlsx,.xls,.ppt,.pptx,.zip,.rar">
+                        <div class="file-upload-area" id="fileUploadArea">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p>Click to upload or drag and drop files here</p>
+                            <small>Supports: Images, PDFs, Documents, Spreadsheets, Presentations, Archives</small>
+                        </div>
+                        <div class="file-preview-container" id="filePreviewContainer" style="display: none;">
+                            <div class="file-preview-header">
+                                <span>Selected Files:</span>
+                                <button type="button" class="btn btn-sm btn-secondary" id="clearFilesBtn">Clear All</button>
+                            </div>
+                            <div class="file-preview-list" id="filePreviewList"></div>
+                        </div>
+                    </div>
+                </div>
                 <div class="form-group">
                     <label for="itemPriority">Priority</label>
                     <select id="itemPriority" name="priority">
