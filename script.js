@@ -126,6 +126,8 @@ class BratBoxApp {
         const storyPointsGroup = document.getElementById('storyPointsGroup');
         const epicAssignmentGroup = document.getElementById('epicAssignmentGroup');
         const userAssignmentGroup = document.getElementById('userAssignmentGroup');
+        const successCriteriaGroup = document.getElementById('successCriteriaGroup');
+        const goalsGroup = document.getElementById('goalsGroup');
         
         modalTitle.textContent = isEditMode 
             ? (type === 'epic' ? 'Edit Epic' : 'Edit User Story')
@@ -133,6 +135,8 @@ class BratBoxApp {
         storyPointsGroup.style.display = type === 'story' ? 'block' : 'none';
         epicAssignmentGroup.style.display = type === 'story' ? 'block' : 'none';
         userAssignmentGroup.style.display = type === 'story' ? 'block' : 'none';
+        successCriteriaGroup.style.display = type === 'epic' ? 'block' : 'none';
+        goalsGroup.style.display = type === 'epic' ? 'block' : 'none';
         
         // Populate dropdowns for user stories
         if (type === 'story') {
@@ -222,7 +226,10 @@ class BratBoxApp {
             this.currentEditingItem.description = formData.get('description');
             this.currentEditingItem.priority = formData.get('priority');
             
-            if (this.currentEditingType === 'story') {
+            if (this.currentEditingType === 'epic') {
+                this.currentEditingItem.successCriteria = formData.get('successCriteria') || '';
+                this.currentEditingItem.goals = formData.get('goals') || '';
+            } else if (this.currentEditingType === 'story') {
                 this.currentEditingItem.storyPoints = parseInt(formData.get('storyPoints'));
                 this.currentEditingItem.epicId = formData.get('epicId') || null;
                 this.currentEditingItem.assignedUserId = formData.get('userId') || null;
@@ -251,6 +258,8 @@ class BratBoxApp {
                 description: formData.get('description'),
                 priority: formData.get('priority'),
                 createdAt: new Date().toISOString(),
+                successCriteria: this.currentItemType === 'epic' ? formData.get('successCriteria') || '' : null,
+                goals: this.currentItemType === 'epic' ? formData.get('goals') || '' : null,
                 storyPoints: this.currentItemType === 'story' ? parseInt(formData.get('storyPoints')) : null,
                 epicId: this.currentItemType === 'story' ? formData.get('epicId') || null : null,
                 assignedUserId: this.currentItemType === 'story' ? formData.get('userId') || null : null
@@ -405,6 +414,11 @@ class BratBoxApp {
         document.getElementById('itemTitle').value = item.title;
         document.getElementById('itemDescription').value = item.description || '';
         document.getElementById('itemPriority').value = item.priority;
+        
+        if (type === 'epic') {
+            document.getElementById('itemSuccessCriteria').value = item.successCriteria || '';
+            document.getElementById('itemGoals').value = item.goals || '';
+        }
         
         if (type === 'story' && item.storyPoints) {
             document.getElementById('itemStoryPoints').value = item.storyPoints;
@@ -916,6 +930,20 @@ class BratBoxApp {
                 <label class="story-detail-label">Description</label>
                 <div class="story-detail-value large">${this.escapeHtml(epic.description || 'No description provided')}</div>
             </div>
+
+            ${epic.successCriteria ? `
+                <div class="story-detail-section">
+                    <label class="story-detail-label">Success Criteria</label>
+                    <div class="story-detail-value large">${this.escapeHtml(epic.successCriteria)}</div>
+                </div>
+            ` : ''}
+
+            ${epic.goals ? `
+                <div class="story-detail-section">
+                    <label class="story-detail-label">Goals</label>
+                    <div class="story-detail-value large">${this.escapeHtml(epic.goals)}</div>
+                </div>
+            ` : ''}
 
             <div class="story-detail-section">
                 <label class="story-detail-label">Priority</label>
