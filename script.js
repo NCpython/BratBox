@@ -785,7 +785,7 @@ class BratBoxApp {
 
         // Remove story from sprint
         this.sprintStories = this.sprintStories.filter(s => s.id !== storyId);
-        this.saveToStorage('bratbox_sprint_stories', this.sprintStories);
+        this.saveToSharedStorage();
         
         // Re-render the sprint board
         this.renderSprintBoard();
@@ -805,7 +805,7 @@ class BratBoxApp {
 
         // Clear all stories from sprint
         this.sprintStories = [];
-        this.saveToStorage('bratbox_sprint_stories', this.sprintStories);
+        this.saveToSharedStorage();
         
         // Re-render the sprint board
         this.renderSprintBoard();
@@ -1339,7 +1339,7 @@ class BratBoxApp {
             }));
 
         this.sprintStories.push(...storiesToAdd);
-        this.saveToStorage('bratbox_sprint_stories', this.sprintStories);
+        this.saveToSharedStorage();
         this.renderSprintBoard();
         
         this.closeBacklogSelectionModal();

@@ -1,3 +1,4 @@
+
 # BratBox Shared Storage Setup Guide
 
 ## Current Implementation: Supabase (Active)
