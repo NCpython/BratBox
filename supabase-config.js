@@ -6,30 +6,40 @@ const SUPABASE_CONFIG = {
     anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbmFjeWtweHRnZHh1ZmhkaWFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY5ODI2NTIsImV4cCI6MjA3MjU1ODY1Mn0.fl-GjnXFxAZYYy2-bGbslEpe0FQYGLdNVolSxAZkSik'
 };
 
-// Initialize Supabase client
-let supabase = null;
-
-// Initialize Supabase (call this after loading the Supabase library)
-function initSupabase() {
-    console.log('Initializing Supabase...');
-    console.log('Window supabase available:', typeof window.supabase !== 'undefined');
-    console.log('Config:', SUPABASE_CONFIG);
+// Initialize Supabase client (using IIFE to avoid conflicts)
+(function() {
+    'use strict';
     
-    // Check if the global supabase object exists
-    if (typeof window.supabase === 'undefined') {
-        console.error('Supabase library not loaded. Please include the Supabase CDN script.');
-        return false;
-    }
+    // Store the Supabase client instance
+    let supabaseClient = null;
     
-    try {
-        supabase = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
-        console.log('Supabase client created successfully');
-        return true;
-    } catch (error) {
-        console.error('Error initializing Supabase:', error);
-        return false;
-    }
-}
+    // Initialize Supabase (call this after loading the Supabase library)
+    window.initSupabase = function() {
+        console.log('Initializing Supabase...');
+        console.log('Window supabase available:', typeof window.supabase !== 'undefined');
+        console.log('Config:', SUPABASE_CONFIG);
+        
+        // Check if the global supabase object exists
+        if (typeof window.supabase === 'undefined') {
+            console.error('Supabase library not loaded. Please include the Supabase CDN script.');
+            return false;
+        }
+        
+        try {
+            supabaseClient = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
+            console.log('Supabase client created successfully');
+            return true;
+        } catch (error) {
+            console.error('Error initializing Supabase:', error);
+            return false;
+        }
+    };
+    
+    // Get the Supabase client instance
+    window.getSupabaseClient = function() {
+        return supabaseClient;
+    };
+})();
 
 // Database operations
 class SupabaseStorage {
@@ -53,7 +63,7 @@ class SupabaseStorage {
             return false;
         }
         
-        this.isInitialized = initSupabase();
+        this.isInitialized = window.initSupabase();
         return this.isInitialized;
     }
 
@@ -69,7 +79,11 @@ class SupabaseStorage {
 
         try {
             console.log('Querying Supabase for data...');
-            const { data, error } = await supabase
+            const supabaseClient = window.getSupabaseClient();
+            if (!supabaseClient) {
+                throw new Error('Supabase client not initialized');
+            }
+            const { data, error } = await supabaseClient
                 .from('bratbox_data')
                 .select('*')
                 .eq('id', 1)
@@ -135,7 +149,11 @@ class SupabaseStorage {
 
         try {
             console.log('Saving data to Supabase:', data);
-            const { error } = await supabase
+            const supabaseClient = window.getSupabaseClient();
+            if (!supabaseClient) {
+                throw new Error('Supabase client not initialized');
+            }
+            const { error } = await supabaseClient
                 .from('bratbox_data')
                 .upsert({
                     id: 1,
