@@ -40,3 +40,7 @@ The sprint board is divided into 6 key sections to track story progression:
 ## Contributing
 
 *Guidelines coming soon*
+
+## Updates
+
+Last updated: December 2025
